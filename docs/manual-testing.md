@@ -4,7 +4,7 @@ Run the frontend and backend with PostgreSQL and Ollama available. Send one requ
 at a time, recording elapsed time, answer, citations, risk label and backend logs.
 These cases verify application behavior, not legal approval for a building.
 
-## Recorded Checks (2026-10-06)
+## Earlier Checks (2026-10-06, 18-Second Generation Limit)
 
 The corrected backend was run temporarily on port 8091 against the local PostgreSQL
 and Ollama services. Both required models appeared in Ollama's installed-model list.
@@ -25,8 +25,8 @@ interaction was not automated in this run.
 
 The local Ollama log reported approximately 33 seconds to load `llama3.1` during
 the direct check, exceeding the backend's 18-second generation limit before any
-complete answer. Real LLM generation performance remains unresolved on this machine;
-the passing unit tests and guided result must not be reported as an end-to-end LLM success.
+complete answer. Those checks used the earlier limits; they must not be reported as
+an end-to-end LLM success.
 
 ## Backend Log Interpretation
 
@@ -40,10 +40,48 @@ the passing unit tests and guided result must not be reported as an end-to-end L
   a preliminary answer with retrieved sources. This is not successful LLM generation.
 
 The embedding timeout defaults to 30 seconds and can be configured with
-`NORMBUILD_EMBEDDING_TIMEOUT_SECONDS`. The generation timeout defaults to 18 seconds
+`NORMBUILD_EMBEDDING_TIMEOUT_SECONDS`. The generation timeout now defaults to 120 seconds
 and can be configured with `NORMBUILD_LLM_TIMEOUT_SECONDS`. Keep their combined
-budget below the 90-second HTTP async timeout, allowing time for database access
+budget below the 180-second HTTP async timeout, allowing time for database access
 and queueing. Increasing timeouts alone does not establish model availability.
+
+Generation now explicitly uses a 4096-token context, at most 512 output tokens and
+temperature 0.1. These can be tuned through `NORMBUILD_LLM_CONTEXT_TOKENS` and
+`NORMBUILD_LLM_MAX_OUTPUT_TOKENS`. The prompt requests a concise checklist of at most
+four items under 150 Spanish words, with numbered references matching the displayed
+sources. Truncated or incomplete model output is rejected, preserving the guided
+fallback instead of reporting a partial answer as complete.
+
+`NORMBUILD_MODEL_KEEP_ALIVE` defaults to `10m` so Ollama can reuse the loaded model
+between calls. Memory pressure can still force an unload. The frontend shows real
+elapsed time while waiting and stops waiting after 190 seconds. Runtime options
+and completion fields follow the [Ollama generation API](https://docs.ollama.com/api/generate).
+
+## Updated Generation Checks (2026-10-06)
+
+The local `llama3.1` runner generated about five tokens per second on this machine.
+A longer checklist still exceeded 120 seconds, so the final prompt uses four short
+items and numbered citations instead of repeatedly generating regulation titles.
+No model switch or synthetic answer was used for the following successful checks.
+
+| Request | Observed result |
+| --- | --- |
+| Two-floor house, 180 square meters, 7.5-meter height | 42.7 seconds, `GENERATIVE`, 5 sources, completed output |
+| Exact unifamiliar-house description from the screenshot | 54.5 seconds, `GENERATIVE`, 5 sources, 240 output tokens, risk unverified |
+| Updated backend regression suite | 18 tests passed |
+| Updated frontend production build | Passed |
+
+Both successful requests used the corrected backend on port 8091, PostgreSQL and
+the real local Ollama API. They were sequential, not a concurrency benchmark or
+a guarantee that all future prompts will complete at the same speed. Browser
+automation could not initialize because of an environment configuration error;
+visual behavior was not verified in this run. A separate PowerShell web-request
+client stalled and was stopped; the successful requests used `Invoke-RestMethod`
+against `127.0.0.1`.
+
+Restart the backend after applying these changes, then reload the frontend.
+Success is observable in the response's `generationMode` and the backend line
+`Checklist completed: mode=GENERATIVE`; the guided banner is hidden in that mode.
 
 ## Manual Cases
 
@@ -114,7 +152,10 @@ $payload = @{
     projectDescription = 'Casa de dos pisos con altura total de 7.5 metros en un lote de 180 metros cuadrados. Quiero revisar aislamientos y licencia.'
 } | ConvertTo-Json
 $timer = [System.Diagnostics.Stopwatch]::StartNew()
-$response = Invoke-RestMethod -Method Post -Uri 'http://localhost:8080/api/regulations/compliance-checklist' -ContentType 'application/json; charset=utf-8' -Body ([System.Text.Encoding]::UTF8.GetBytes($payload)) -TimeoutSec 95
+$httpResponse = Invoke-WebRequest -UseBasicParsing -Method Post -Uri 'http://localhost:8080/api/regulations/compliance-checklist' -ContentType 'application/json; charset=utf-8' -Body ([System.Text.Encoding]::UTF8.GetBytes($payload)) -TimeoutSec 190
+$reader = [System.IO.StreamReader]::new($httpResponse.RawContentStream, [System.Text.Encoding]::UTF8)
+$response = $reader.ReadToEnd() | ConvertFrom-Json
+$reader.Dispose()
 $timer.Stop()
 $response | ConvertTo-Json -Depth 6
 $timer.Elapsed.TotalSeconds
@@ -132,6 +173,7 @@ cd backend
 mvn test
 ```
 
-These unit tests cover extracted measurements and RAG branching using test doubles.
+These tests cover extracted measurements, RAG branching and the LLM HTTP request
+contract using test doubles and a local test HTTP server.
 They do not prove PostgreSQL, Ollama or the browser are working. Use the real service
 checks and manual cases above for end-to-end validation.

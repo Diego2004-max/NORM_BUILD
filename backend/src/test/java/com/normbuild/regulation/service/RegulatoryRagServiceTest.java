@@ -36,7 +36,7 @@ class RegulatoryRagServiceTest {
     void setUp() {
         NormBuildAiProperties properties = new NormBuildAiProperties(
                 768, "http://localhost:11434/api/generate", "http://localhost:11434/api/embeddings",
-                "llama3.1", "nomic-embed-text", 0.35, 5, 30, 18);
+                "llama3.1", "nomic-embed-text", 0.35, 5, 30, 120, 4096, 512, "10m");
         service = new RegulatoryRagService(properties, embeddingClient, llmClient,
                 new EmbeddingFormatter(), new RegulatoryPromptBuilder(),
                 new DeterministicChecklistBuilder(new ProjectFactExtractor()),

@@ -6,7 +6,7 @@ spring:
     name: normbuild-api
   mvc:
     async:
-      request-timeout: 90000
+      request-timeout: 180000
   datasource:
     url: jdbc:postgresql://localhost:5434/normbuild
     username: postgres
@@ -32,4 +32,7 @@ normbuild:
     similarity-threshold: 0.35
     max-context-results: 5
     embedding-timeout-seconds: ${NORMBUILD_EMBEDDING_TIMEOUT_SECONDS:30}
-    llm-timeout-seconds: ${NORMBUILD_LLM_TIMEOUT_SECONDS:18}
+    llm-timeout-seconds: ${NORMBUILD_LLM_TIMEOUT_SECONDS:120}
+    llm-context-tokens: ${NORMBUILD_LLM_CONTEXT_TOKENS:4096}
+    llm-max-output-tokens: ${NORMBUILD_LLM_MAX_OUTPUT_TOKENS:512}
+    model-keep-alive: ${NORMBUILD_MODEL_KEEP_ALIVE:10m}

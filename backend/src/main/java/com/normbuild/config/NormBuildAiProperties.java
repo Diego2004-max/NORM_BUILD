@@ -17,6 +17,9 @@ public record NormBuildAiProperties(
         @DecimalMin("0.0") double similarityThreshold,
         @Min(1) int maxContextResults,
         @Min(1) int embeddingTimeoutSeconds,
-        @Min(1) int llmTimeoutSeconds
+        @Min(1) int llmTimeoutSeconds,
+        @Min(256) int llmContextTokens,
+        @Min(1) int llmMaxOutputTokens,
+        @NotBlank String modelKeepAlive
 ) {
 }

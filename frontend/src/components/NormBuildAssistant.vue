@@ -17,6 +17,7 @@ const validationIssues = ref<WorkerValidationIssue[]>([]);
 const formattedDescription = ref('');
 const wordCount = ref(0);
 const requestError = ref('');
+const elapsedSeconds = ref(0);
 
 const validationWorker = new Worker(new URL('../workers/regulationWorker.ts', import.meta.url), {
   type: 'module',
@@ -53,6 +54,7 @@ const riskBadgeClass = computed(() => {
 });
 
 let validationTimer: number | undefined;
+let submissionTimer: number | undefined;
 
 const runValidation = () => {
   window.clearTimeout(validationTimer);
@@ -86,6 +88,11 @@ const submitQuery = async () => {
     return;
   }
   isSubmitting.value = true;
+  elapsedSeconds.value = 0;
+  const startedAt = Date.now();
+  submissionTimer = window.setInterval(() => {
+    elapsedSeconds.value = Math.floor((Date.now() - startedAt) / 1000);
+  }, 1000);
   try {
     answer.value = await requestComplianceChecklist({
       jurisdiction: jurisdiction.value.trim(),
@@ -97,12 +104,14 @@ const submitQuery = async () => {
         ? error.message
         : 'No fue posible consultar la normativa en este momento.';
   } finally {
+    window.clearInterval(submissionTimer);
     isSubmitting.value = false;
   }
 };
 
 onBeforeUnmount(() => {
   window.clearTimeout(validationTimer);
+  window.clearInterval(submissionTimer);
   validationWorker.terminate();
 });
 </script>
@@ -184,8 +193,9 @@ onBeforeUnmount(() => {
             </span>
           </div>
 
-          <div v-if="isSubmitting" class="flex min-h-96 items-center justify-center rounded-md border border-dashed border-slate-300 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-300">
-            Analizando documentos oficiales y generando respuesta...
+          <div v-if="isSubmitting" class="flex min-h-96 flex-col items-center justify-center gap-3 rounded-md border border-dashed border-slate-300 px-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-300" role="status" aria-live="polite">
+            <span>Analizando fuentes y generando respuesta...</span>
+            <span class="tabular-nums" aria-live="off">{{ elapsedSeconds }} s transcurridos</span>
           </div>
 
           <div v-else-if="answer" class="space-y-5">
@@ -200,13 +210,13 @@ onBeforeUnmount(() => {
               <h3 class="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Fuentes citadas</h3>
               <div class="space-y-3">
                 <article
-                  v-for="citation in answer.citations"
+                  v-for="(citation, index) in answer.citations"
                   :key="citation.id"
                   class="rounded-md border border-slate-200 p-4 dark:border-slate-700"
                 >
                   <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <h4 class="font-semibold">{{ citation.title }}</h4>
+                      <h4 class="font-semibold">[{{ index + 1 }}] {{ citation.title }}</h4>
                       <p class="text-sm text-slate-500 dark:text-slate-400">
                         {{ citation.regulationCode }} · {{ citation.articleReference }}
                       </p>
