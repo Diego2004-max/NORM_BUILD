@@ -1,0 +1,21 @@
+services:
+  database:
+    image: pgvector/pgvector:pg16
+    container_name: normbuild-postgres
+    environment:
+      POSTGRES_DB: normbuild
+      POSTGRES_USER: normbuild
+      POSTGRES_PASSWORD: normbuild
+    ports:
+      - "5432:5432"
+    volumes:
+      - normbuild-postgres-data:/var/lib/postgresql/data
+      - ./backend/src/main/resources/db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U normbuild -d normbuild"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  normbuild-postgres-data:

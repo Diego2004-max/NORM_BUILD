@@ -1,0 +1,27 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: normbuild-api
+  datasource:
+    url: jdbc:postgresql://localhost:5432/normbuild
+    username: normbuild
+    password: normbuild
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  sql:
+    init:
+      mode: always
+
+normbuild:
+  ai:
+    embedding-dimensions: 384
+    llm-endpoint: ${NORMBUILD_LLM_ENDPOINT:http://localhost:11434/api/generate}
+    embedding-endpoint: ${NORMBUILD_EMBEDDING_ENDPOINT:http://localhost:11434/api/embeddings}
+    model-name: ${NORMBUILD_MODEL_NAME:llama3.1}
+    embedding-model-name: ${NORMBUILD_EMBEDDING_MODEL_NAME:nomic-embed-text}
+    similarity-threshold: 0.72
+    max-context-results: 5
