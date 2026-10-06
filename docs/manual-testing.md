@@ -151,9 +151,14 @@ The local backend previously returned HTTP 403 to a preflight from port 5174,
 which explains a browser network failure even when the backend's health is UP.
 Network failures are now shown in Spanish. A city without indexed documents is
 a separate case and must return `NO_CONTEXT`, not a network failure.
-Real requests through both frontend ports 5173 and 5174 returned `NO_CONTEXT` with
-zero sources for Pasto. A request through 5174 carrying its browser Origin header
-also succeeded. The updated frontend production build passed. Proxy configuration
+Initial requests without an Origin header through frontend ports 5173 and 5174
+returned `NO_CONTEXT` with zero sources for Pasto. The follow-up request with the
+5174 Origin header failed and is not a passed check. The backend on 8080 subsequently
+became unavailable, while 8091 remained UP. A request through 5173 carrying its
+browser Origin header succeeded with `NO_CONTEXT` and zero sources. The running
+5173 frontend targets 8091; the running 5174 frontend targets 8080. Restarting a
+frontend with a different backend target requires setting `NORMBUILD_BACKEND_URL`.
+The updated frontend production build passed. Proxy configuration
 follows the [Vite server proxy documentation](https://vite.dev/config/server-options.html#server-proxy).
 
 In PowerShell, inspect installed and loaded models without starting a second server:
