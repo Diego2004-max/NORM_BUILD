@@ -10,15 +10,18 @@ spring:
     password: 123456
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     open-in-view: false
   sql:
     init:
       mode: always
+      schema-locations:
+        - classpath:db/init/001-enable-pgvector.sql
+        - classpath:db/init/002-create-regulatory-documents.sql
 
 normbuild:
   ai:
-    embedding-dimensions: 384
+    embedding-dimensions: 768
     llm-endpoint: ${NORMBUILD_LLM_ENDPOINT:http://localhost:11434/api/generate}
     embedding-endpoint: ${NORMBUILD_EMBEDDING_ENDPOINT:http://localhost:11434/api/embeddings}
     model-name: ${NORMBUILD_MODEL_NAME:llama3.1}

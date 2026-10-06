@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS regulatory_documents (
     regulation_code VARCHAR(80) NOT NULL,
     article_reference VARCHAR(120) NOT NULL,
     content TEXT NOT NULL,
-    embedding vector(384) NOT NULL,
+    embedding vector(768) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
