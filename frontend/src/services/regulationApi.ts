@@ -3,7 +3,7 @@ import type {
   ComplianceQueryRequest,
 } from '../types/regulation';
 
-const apiBaseUrl = import.meta.env.VITE_NORMBUILD_API_URL ?? 'http://localhost:8080';
+const apiBaseUrl = import.meta.env.DEV ? '' : (import.meta.env.VITE_NORMBUILD_API_URL ?? '');
 
 interface ApiErrorResponse {
   message?: string;
@@ -36,6 +36,12 @@ export const requestComplianceChecklist = async (
   } catch (error) {
     if (controller.signal.aborted) {
       throw new Error('El análisis superó el tiempo de espera. Intenta nuevamente en unos momentos.');
+    }
+    if (error instanceof TypeError) {
+      throw new Error('No fue posible conectar con el servidor. Comprueba que el backend esté en ejecución e intenta nuevamente.');
+    }
+    if (error instanceof SyntaxError) {
+      throw new Error('El servidor devolvió una respuesta inválida. Intenta nuevamente en unos momentos.');
     }
     throw error;
   } finally {

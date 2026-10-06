@@ -136,6 +136,26 @@ documents. Bogotá documents must not be used for Medellín.
 
 ## Real Service Checks
 
+During local development, the browser calls `/api` on its own frontend origin.
+Vite forwards those calls to `NORMBUILD_BACKEND_URL` (default
+`http://127.0.0.1:8080`). It also accepts `VITE_NORMBUILD_API_URL` as a compatibility
+fallback for the local backend target. This works when Vite selects another port,
+such as 5174, without expanding the backend's browser CORS allowlist. The proxy strips
+the browser Origin header only on its server-to-server upstream request.
+
+For a production build, `VITE_NORMBUILD_API_URL` configures an explicit backend
+origin; otherwise `/api` must be routed by the deployment's reverse proxy on the
+same origin. Changing backend target environment variables requires restarting Vite.
+
+The local backend previously returned HTTP 403 to a preflight from port 5174,
+which explains a browser network failure even when the backend's health is UP.
+Network failures are now shown in Spanish. A city without indexed documents is
+a separate case and must return `NO_CONTEXT`, not a network failure.
+Real requests through both frontend ports 5173 and 5174 returned `NO_CONTEXT` with
+zero sources for Pasto. A request through 5174 carrying its browser Origin header
+also succeeded. The updated frontend production build passed. Proxy configuration
+follows the [Vite server proxy documentation](https://vite.dev/config/server-options.html#server-proxy).
+
 In PowerShell, inspect installed and loaded models without starting a second server:
 
 ```powershell
