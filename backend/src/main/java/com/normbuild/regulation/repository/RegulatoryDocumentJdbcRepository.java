@@ -1,0 +1,37 @@
+package com.normbuild.regulation.repository;
+
+import com.normbuild.regulation.dto.DocumentIngestionRequest;
+import java.sql.PreparedStatement;
+import java.time.OffsetDateTime;
+import java.util.UUID;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public class RegulatoryDocumentJdbcRepository {
+
+    private final JdbcTemplate jdbcTemplate;
+
+    public RegulatoryDocumentJdbcRepository(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
+    public void insertDocument(UUID id, DocumentIngestionRequest request, String embeddingLiteral) {
+        jdbcTemplate.update(connection -> {
+            PreparedStatement statement = connection.prepareStatement("""
+                    INSERT INTO regulatory_documents (
+                        id, title, jurisdiction, regulation_code, article_reference, content, embedding, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, CAST(? AS vector), ?)
+                    """);
+            statement.setObject(1, id);
+            statement.setString(2, request.title());
+            statement.setString(3, request.jurisdiction());
+            statement.setString(4, request.regulationCode());
+            statement.setString(5, request.articleReference());
+            statement.setString(6, request.content());
+            statement.setString(7, embeddingLiteral);
+            statement.setObject(8, OffsetDateTime.now());
+            return statement;
+        });
+    }
+}
