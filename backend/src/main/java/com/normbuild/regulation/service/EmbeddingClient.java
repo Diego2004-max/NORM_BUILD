@@ -1,11 +1,13 @@
 package com.normbuild.regulation.service;
 
 import com.normbuild.config.NormBuildAiProperties;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.Exceptions;
 
 @Component
 public class EmbeddingClient {
@@ -29,14 +31,20 @@ public class EmbeddingClient {
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
                 })
+                .timeout(Duration.ofSeconds(properties.embeddingTimeoutSeconds()))
+                .onErrorMap(throwable -> new AiProviderException("No fue posible generar el vector semántico con Ollama.", throwable))
                 .block();
         Object embedding = response == null ? null : response.get("embedding");
         if (!(embedding instanceof List<?> values)) {
-            throw new IllegalStateException("Embedding provider returned an invalid response");
+            throw new AiProviderException("Ollama no devolvió un vector semántico válido.");
         }
-        return values.stream()
-                .map(Number.class::cast)
-                .map(Number::doubleValue)
-                .toList();
+        try {
+            return values.stream()
+                    .map(Number.class::cast)
+                    .map(Number::doubleValue)
+                    .toList();
+        } catch (RuntimeException exception) {
+            throw Exceptions.propagate(new AiProviderException("El vector semántico contiene valores inválidos.", exception));
+        }
     }
 }

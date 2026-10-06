@@ -36,12 +36,18 @@ public class RegulatoryKnowledgeSeeder implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        if (documentRepository.count() > 0) {
+        List<SeedRegulationDocument> documents = seedCatalog.bogotaDocuments();
+        long missingDocuments = documents.stream()
+                .filter(document -> !documentRepository.existsById(document.id()))
+                .count();
+        if (missingDocuments == 0) {
             return;
         }
-        List<SeedRegulationDocument> documents = seedCatalog.bogotaDocuments();
-        LOGGER.info("Indexing {} baseline regulatory documents", documents.size());
+        LOGGER.info("Indexing {} missing baseline regulatory documents", missingDocuments);
         for (SeedRegulationDocument document : documents) {
+            if (documentRepository.existsById(document.id())) {
+                continue;
+            }
             try {
                 String embeddingLiteral = embeddingFormatter.toVectorLiteral(embeddingClient.createEmbedding(document.content()));
                 jdbcRepository.insertDocument(document.id(), document.toIngestionRequest(), embeddingLiteral);

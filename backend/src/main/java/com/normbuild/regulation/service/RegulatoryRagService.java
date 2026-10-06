@@ -26,6 +26,7 @@ public class RegulatoryRagService {
     private final LlmClient llmClient;
     private final EmbeddingFormatter embeddingFormatter;
     private final RegulatoryPromptBuilder promptBuilder;
+    private final DeterministicChecklistBuilder deterministicChecklistBuilder;
     private final DocumentParsingService parsingService;
     private final RegulatoryDocumentRepository documentRepository;
     private final RegulatoryDocumentJdbcRepository jdbcRepository;
@@ -37,6 +38,7 @@ public class RegulatoryRagService {
             LlmClient llmClient,
             EmbeddingFormatter embeddingFormatter,
             RegulatoryPromptBuilder promptBuilder,
+            DeterministicChecklistBuilder deterministicChecklistBuilder,
             DocumentParsingService parsingService,
             RegulatoryDocumentRepository documentRepository,
             RegulatoryDocumentJdbcRepository jdbcRepository,
@@ -47,6 +49,7 @@ public class RegulatoryRagService {
         this.llmClient = llmClient;
         this.embeddingFormatter = embeddingFormatter;
         this.promptBuilder = promptBuilder;
+        this.deterministicChecklistBuilder = deterministicChecklistBuilder;
         this.parsingService = parsingService;
         this.documentRepository = documentRepository;
         this.jdbcRepository = jdbcRepository;
@@ -77,7 +80,12 @@ public class RegulatoryRagService {
                 );
             }
             String prompt = promptBuilder.buildChecklistPrompt(request, context);
-            String answer = llmClient.generateChecklist(prompt);
+            String answer;
+            try {
+                answer = llmClient.generateChecklist(prompt);
+            } catch (AiProviderException exception) {
+                answer = deterministicChecklistBuilder.build(request, context);
+            }
             return new ComplianceChecklistResponse(answer, estimateRiskLevel(context), mapCitations(context), OffsetDateTime.now());
         }, ragTaskExecutor);
     }

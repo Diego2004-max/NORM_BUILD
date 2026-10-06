@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: normbuild-api
+  mvc:
+    async:
+      request-timeout: 90000
   datasource:
     url: jdbc:postgresql://localhost:5434/normbuild
     username: postgres
@@ -28,3 +31,5 @@ normbuild:
     embedding-model-name: ${NORMBUILD_EMBEDDING_MODEL_NAME:nomic-embed-text}
     similarity-threshold: 0.35
     max-context-results: 5
+    embedding-timeout-seconds: 12
+    llm-timeout-seconds: 18

@@ -15,6 +15,8 @@ public record NormBuildAiProperties(
         @NotBlank String modelName,
         @NotBlank String embeddingModelName,
         @DecimalMin("0.0") double similarityThreshold,
-        @Min(1) int maxContextResults
+        @Min(1) int maxContextResults,
+        @Min(1) int embeddingTimeoutSeconds,
+        @Min(1) int llmTimeoutSeconds
 ) {
 }

@@ -5,6 +5,11 @@ import type {
 
 const apiBaseUrl = import.meta.env.VITE_NORMBUILD_API_URL ?? 'http://localhost:8080';
 
+interface ApiErrorResponse {
+  message?: string;
+  details?: string[];
+}
+
 export const requestComplianceChecklist = async (
   request: ComplianceQueryRequest,
 ): Promise<ComplianceChecklistResponse> => {
@@ -18,8 +23,9 @@ export const requestComplianceChecklist = async (
 
   if (!response.ok) {
     const fallbackMessage = 'No fue posible consultar la normativa en este momento.';
-    const errorBody = await response.json().catch(() => ({ message: fallbackMessage }));
-    throw new Error(errorBody.message ?? fallbackMessage);
+    const errorBody = (await response.json().catch(() => ({ message: fallbackMessage }))) as ApiErrorResponse;
+    const details = errorBody.details?.filter(Boolean).join(' ');
+    throw new Error([errorBody.message ?? fallbackMessage, details].filter(Boolean).join(' '));
   }
 
   return response.json() as Promise<ComplianceChecklistResponse>;
