@@ -22,6 +22,7 @@ public class RegulatoryDocumentJdbcRepository {
                     INSERT INTO regulatory_documents (
                         id, title, jurisdiction, regulation_code, article_reference, content, embedding, created_at
                     ) VALUES (?, ?, ?, ?, ?, ?, CAST(? AS vector), ?)
+                    ON CONFLICT (id) DO NOTHING
                     """);
             statement.setObject(1, id);
             statement.setString(2, request.title());

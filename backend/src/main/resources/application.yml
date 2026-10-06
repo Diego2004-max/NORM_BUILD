@@ -26,5 +26,5 @@ normbuild:
     embedding-endpoint: ${NORMBUILD_EMBEDDING_ENDPOINT:http://localhost:11434/api/embeddings}
     model-name: ${NORMBUILD_MODEL_NAME:llama3.1}
     embedding-model-name: ${NORMBUILD_EMBEDDING_MODEL_NAME:nomic-embed-text}
-    similarity-threshold: 0.72
+    similarity-threshold: 0.35
     max-context-results: 5
