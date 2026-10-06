@@ -24,7 +24,9 @@ public class RegulatoryPromptBuilder {
             builder.append(document.getArticleReference()).append("\n");
             builder.append(document.getContent()).append("\n\n");
         }
-        builder.append("Return a practical checklist with mandatory steps, evidence required, cited articles, and risk level.");
+        builder.append("Return a practical checklist with steps, evidence required and cited articles. ");
+        builder.append("Distinguish lot area from built area. Do not invent numeric limits or authorize construction. ");
+        builder.append("Semantic similarity is not compliance evidence. Report risk as 'Por verificar' until parcel-specific rules are verified.");
         return builder.toString();
     }
 }

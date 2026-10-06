@@ -7,6 +7,7 @@ public record ComplianceChecklistResponse(
         String answer,
         String riskLevel,
         List<CitedRegulationResponse> citations,
-        OffsetDateTime generatedAt
+        OffsetDateTime generatedAt,
+        ChecklistGenerationMode generationMode
 ) {
 }

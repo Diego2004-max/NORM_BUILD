@@ -52,7 +52,11 @@ public class RegulatoryKnowledgeSeeder implements ApplicationRunner {
                 String embeddingLiteral = embeddingFormatter.toVectorLiteral(embeddingClient.createEmbedding(document.content()));
                 jdbcRepository.insertDocument(document.id(), document.toIngestionRequest(), embeddingLiteral);
             } catch (RuntimeException exception) {
-                LOGGER.warn("Could not index baseline regulatory document '{}': {}", document.title(), exception.getMessage());
+                LOGGER.warn("Could not index baseline regulatory document id={}", document.id(), exception);
+                if (exception instanceof AiProviderException) {
+                    LOGGER.warn("Stopping baseline indexing after provider failure; missing documents will be retried on next startup");
+                    break;
+                }
             }
         }
     }

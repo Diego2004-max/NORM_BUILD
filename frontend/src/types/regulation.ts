@@ -17,6 +17,7 @@ export interface ComplianceChecklistResponse {
   riskLevel: string;
   citations: CitedRegulationResponse[];
   generatedAt: string;
+  generationMode?: 'GENERATIVE' | 'GUIDED' | 'NO_CONTEXT';
 }
 
 export interface WorkerValidationIssue {

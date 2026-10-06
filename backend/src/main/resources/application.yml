@@ -31,5 +31,5 @@ normbuild:
     embedding-model-name: ${NORMBUILD_EMBEDDING_MODEL_NAME:nomic-embed-text}
     similarity-threshold: 0.35
     max-context-results: 5
-    embedding-timeout-seconds: 12
-    llm-timeout-seconds: 18
+    embedding-timeout-seconds: ${NORMBUILD_EMBEDDING_TIMEOUT_SECONDS:30}
+    llm-timeout-seconds: ${NORMBUILD_LLM_TIMEOUT_SECONDS:18}

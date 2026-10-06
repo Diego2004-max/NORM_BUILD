@@ -12,12 +12,9 @@ import org.springframework.stereotype.Component;
 public class DeterministicChecklistBuilder {
 
     private final ProjectFactExtractor factExtractor;
-    private final DecimalFormat decimalFormat;
 
     public DeterministicChecklistBuilder(ProjectFactExtractor factExtractor) {
         this.factExtractor = factExtractor;
-        DecimalFormatSymbols symbols = DecimalFormatSymbols.getInstance(Locale.US);
-        this.decimalFormat = new DecimalFormat("#.##", symbols);
     }
 
     public String build(ComplianceQueryRequest request, List<RegulatoryDocumentProjection> documents) {
@@ -31,7 +28,7 @@ public class DeterministicChecklistBuilder {
         builder.append("- Área del predio o construcción: ").append(facts.areaSquareMeters().map(this::formatSquareMeters).orElse("no indicada")).append(".\n\n");
 
         builder.append("2. Normas que debes revisar antes de diseñar o radicar\n");
-        appendRule(builder, "Uso del suelo y tratamiento urbanístico", "Confirma que el predio admita vivienda y ubica el tratamiento urbanístico aplicable en el POT de Bogotá.");
+        appendRule(builder, "Uso del suelo y tratamiento urbanístico", "Confirma la compatibilidad del uso propuesto y el tratamiento urbanístico en el instrumento de ordenamiento de " + request.jurisdiction() + ".");
         appendRule(builder, "Edificabilidad", "Valida índice de ocupación, índice de construcción, altura máxima, número de pisos y volumetría permitida para el sector.");
         appendRule(builder, "Retiros y aislamientos", facts.mentionsSetbacks()
                 ? "Tu descripción menciona retiros o aislamientos; debes comprobar aislamiento posterior, lateral, antejardín y empates con colindantes."
@@ -62,7 +59,7 @@ public class DeterministicChecklistBuilder {
                     .append(document.getTitle())
                     .append(".\n");
         }
-        builder.append("\nNivel de riesgo preliminar: Medio-Alto. No construyas ni radiques sin confirmar la norma específica del predio, porque los índices y aislamientos cambian según ubicación, tratamiento urbanístico y condiciones de colindancia.");
+        builder.append("\nNivel de riesgo: Por verificar. La similitud de las fuentes no determina el cumplimiento. Falta contrastar el proyecto con la norma específica del predio; los índices y aislamientos dependen de la ubicación, el tratamiento urbanístico y las condiciones de colindancia.");
         return builder.toString();
     }
 
@@ -92,10 +89,14 @@ public class DeterministicChecklistBuilder {
     }
 
     private String formatMeters(double value) {
-        return decimalFormat.format(value) + " m";
+        return formatNumber(value) + " m";
     }
 
     private String formatSquareMeters(double value) {
-        return decimalFormat.format(value) + " m²";
+        return formatNumber(value) + " m²";
+    }
+
+    private String formatNumber(double value) {
+        return new DecimalFormat("#.##", DecimalFormatSymbols.getInstance(Locale.US)).format(value);
     }
 }

@@ -40,7 +40,7 @@ const statusLabel = computed(() => {
   return 'Listo para consultar';
 });
 const riskBadgeClass = computed(() => {
-  if (!answer.value) {
+  if (!answer.value || answer.value.riskLevel === 'Por verificar') {
     return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200';
   }
   if (answer.value.riskLevel === 'Bajo') {
@@ -189,6 +189,9 @@ onBeforeUnmount(() => {
           </div>
 
           <div v-else-if="answer" class="space-y-5">
+            <p v-if="answer.generationMode === 'GUIDED'" class="border-l-4 border-amber-400 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100" role="status">
+              El modelo local no pudo completar la respuesta. Se muestra una orientación preliminar con las fuentes recuperadas; el cumplimiento está por verificar.
+            </p>
             <article class="prose prose-slate max-w-none whitespace-pre-line rounded-md bg-slate-50 p-4 text-sm leading-6 dark:prose-invert dark:bg-slate-950">
               {{ answer.answer }}
             </article>

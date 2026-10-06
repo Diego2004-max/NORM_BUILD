@@ -2,6 +2,7 @@ package com.normbuild.regulation.service;
 
 import com.normbuild.config.NormBuildAiProperties;
 import com.normbuild.regulation.dto.CitedRegulationResponse;
+import com.normbuild.regulation.dto.ChecklistGenerationMode;
 import com.normbuild.regulation.dto.ComplianceChecklistResponse;
 import com.normbuild.regulation.dto.ComplianceQueryRequest;
 import com.normbuild.regulation.dto.DocumentIngestionRequest;
@@ -17,9 +18,13 @@ import java.util.concurrent.Executor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class RegulatoryRagService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RegulatoryRagService.class);
 
     private final NormBuildAiProperties properties;
     private final EmbeddingClient embeddingClient;
@@ -74,19 +79,24 @@ public class RegulatoryRagService {
             if (context.isEmpty()) {
                 return new ComplianceChecklistResponse(
                         "No encontré normativa oficial suficiente para responder con seguridad. Carga documentos oficiales de la jurisdicción indicada antes de emitir un concepto.",
-                        "Alto",
+                        "Por verificar",
                         List.of(),
-                        OffsetDateTime.now()
+                        OffsetDateTime.now(),
+                        ChecklistGenerationMode.NO_CONTEXT
                 );
             }
             String prompt = promptBuilder.buildChecklistPrompt(request, context);
             String answer;
+            ChecklistGenerationMode generationMode = ChecklistGenerationMode.GENERATIVE;
             try {
                 answer = llmClient.generateChecklist(prompt);
             } catch (AiProviderException exception) {
+                LOGGER.warn("LLM generation failed; returning guided checklist", exception);
                 answer = deterministicChecklistBuilder.build(request, context);
+                generationMode = ChecklistGenerationMode.GUIDED;
             }
-            return new ComplianceChecklistResponse(answer, estimateRiskLevel(context), mapCitations(context), OffsetDateTime.now());
+            LOGGER.info("Checklist completed: mode={}, sources={}", generationMode, context.size());
+            return new ComplianceChecklistResponse(answer, "Por verificar", mapCitations(context), OffsetDateTime.now(), generationMode);
         }, ragTaskExecutor);
     }
 
@@ -120,20 +130,6 @@ public class RegulatoryRagService {
                         excerpt(document.getContent())
                 ))
                 .toList();
-    }
-
-    private String estimateRiskLevel(List<RegulatoryDocumentProjection> documents) {
-        double bestSimilarity = documents.stream()
-                .mapToDouble(RegulatoryDocumentProjection::getSimilarity)
-                .max()
-                .orElse(0.0);
-        if (bestSimilarity >= 0.86) {
-            return "Bajo";
-        }
-        if (bestSimilarity >= 0.78) {
-            return "Medio";
-        }
-        return "Alto";
     }
 
     private String excerpt(String content) {

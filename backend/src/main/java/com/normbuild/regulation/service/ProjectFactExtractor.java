@@ -1,6 +1,8 @@
 package com.normbuild.regulation.service;
 
 import java.util.Optional;
+import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
@@ -8,15 +10,26 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProjectFactExtractor {
 
-    private static final Pattern FLOORS_PATTERN = Pattern.compile("(\\d+)\\s*(pisos?|niveles?)", Pattern.CASE_INSENSITIVE);
-    private static final Pattern HEIGHT_PATTERN = Pattern.compile("(\\d+(?:[\\.,]\\d+)?)\\s*(metros?|m)\\b", Pattern.CASE_INSENSITIVE);
+    private static final Map<String, Integer> FLOOR_NUMBERS = Map.ofEntries(
+            Map.entry("un", 1), Map.entry("uno", 1), Map.entry("dos", 2), Map.entry("tres", 3),
+            Map.entry("cuatro", 4), Map.entry("cinco", 5), Map.entry("seis", 6),
+            Map.entry("siete", 7), Map.entry("ocho", 8), Map.entry("nueve", 9), Map.entry("diez", 10));
+    private static final Pattern FLOORS_PATTERN = Pattern.compile(
+            "\\b(\\d{1,3}|un|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\\s+(?:pisos?|niveles?)\\b");
+    private static final String LENGTH_VALUE = "(\\d+(?:[.,]\\d+)?)\\s*(?:metros?|m)\\b(?!\\s*(?:cuadrados?\\b|[2²]))";
+    private static final Pattern HEIGHT_PATTERN = Pattern.compile(
+            "\\baltura(?:\\s+total)?(?:\\s+propuesta)?(?:\\s+(?:de|es))?\\s*[:=]?\\s*" + LENGTH_VALUE);
+    private static final Pattern TRAILING_HEIGHT_PATTERN = Pattern.compile(
+            "\\b" + LENGTH_VALUE + "\\s+de\\s+(?:altura|alto)\\b");
     private static final Pattern AREA_PATTERN = Pattern.compile("(\\d+(?:[\\.,]\\d+)?)\\s*(metros?\\s*cuadrados|m2|m²)", Pattern.CASE_INSENSITIVE);
 
     public ProjectFacts extract(String description) {
-        String normalized = description == null ? "" : description.toLowerCase();
+        String normalized = description == null ? "" : description.toLowerCase(Locale.ROOT);
+        Optional<Double> height = extractDecimal(HEIGHT_PATTERN, normalized)
+                .or(() -> extractDecimal(TRAILING_HEIGHT_PATTERN, normalized));
         return new ProjectFacts(
                 extractInteger(FLOORS_PATTERN, normalized),
-                extractDecimal(HEIGHT_PATTERN, normalized),
+                height,
                 extractDecimal(AREA_PATTERN, normalized),
                 containsAny(normalized, "residencial", "vivienda", "casa", "bifamiliar", "unifamiliar"),
                 containsAny(normalized, "retiro", "retiros", "aislamiento", "aislamientos", "antejardín", "antejardin"),
@@ -30,7 +43,9 @@ public class ProjectFactExtractor {
         if (!matcher.find()) {
             return Optional.empty();
         }
-        return Optional.of(Integer.parseInt(matcher.group(1)));
+        String valueText = matcher.group(1);
+        return Optional.of(FLOOR_NUMBERS.containsKey(valueText)
+                ? FLOOR_NUMBERS.get(valueText) : Integer.parseInt(valueText));
     }
 
     private Optional<Double> extractDecimal(Pattern pattern, String value) {
