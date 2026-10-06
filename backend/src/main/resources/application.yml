@@ -5,12 +5,12 @@ spring:
   application:
     name: normbuild-api
   datasource:
-    url: jdbc:postgresql://localhost:5432/normbuild
-    username: normbuild
-    password: normbuild
+    url: jdbc:postgresql://localhost:5434/normbuild
+    username: postgres
+    password: 123456
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     open-in-view: false
   sql:
     init:
